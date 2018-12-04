@@ -41,7 +41,7 @@ public class UCodeGenListener extends MiniGoBaseListener {
 
 	@Override
 	public void enterProgram(MiniGoParser.ProgramContext ctx) {
-		System.out.println("GGGG");
+		System.out.println(ctx.getChild(0).toString());
 		
 	}
 
@@ -50,6 +50,10 @@ public class UCodeGenListener extends MiniGoBaseListener {
 		System.out.println("\tldp");
 		System.out.println("\tcall main");
 		System.out.println("\tend");
+		
+
+		//처음에는 print문으로 진행하고 다하고나서는 newText같은 Buffer에 추가해주고
+		//여기서 파일 write해주면 될 것 같음.
 	}
 
 	@Override
@@ -96,11 +100,13 @@ public class UCodeGenListener extends MiniGoBaseListener {
 
 	@Override
 	public void exitType_spec(MiniGoParser.Type_specContext ctx) {
-
 	}
 
 	@Override
 	public void enterParam(MiniGoParser.ParamContext ctx) {
+		// 파라미터 들어가는기능
+		
+		System.out.println();
 	}
 
 	@Override
