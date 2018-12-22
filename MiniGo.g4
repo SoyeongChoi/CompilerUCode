@@ -75,11 +75,12 @@ IDENT     : [a-zA-Z_]
          | [0-9]
          )*;
          
-LITERAL       : DecimalConstant | OctalConstant | HexadecimalConstant ;
+LITERAL       : DecimalConstant | OctalConstant | HexadecimalConstant | StringConstant;
 
 DecimalConstant    : '0' | [1-9] [0-9]* |[1-9] [0-9]* '.' [0-9]+ | '0.' [0-9]+;
 OctalConstant  : '0' [0-7]* ;
 HexadecimalConstant    : '0' [xX] [0-9a-fA-F]+ ;
+StringConstant : [a-z][a-z]*[A-Z]* | [A-Z][a-z]*[A-Z]* | [A-Z][A-Z]*[a-z]* | [a-z][A-Z]*[a-z]*;
 WS       : (' '
          | '\t'
          | '\r'
