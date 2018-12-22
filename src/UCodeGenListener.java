@@ -100,9 +100,6 @@ public class UCodeGenListener extends MiniGoBaseListener {
 			}
 			else{
 				var_decl += newTexts.get(ctx.decl(i));
-				if(type.containsKey(ctx.decl(i).getText())){
-					var_decl += type.get(ctx.decl(i).getText())+"\n";
-				}
 			}
 				
 		}
@@ -367,6 +364,7 @@ public class UCodeGenListener extends MiniGoBaseListener {
 				// left=expr op=(EQ|NE|LE|'<'|GE|'>'|AND|OR) right=expr
 				else {
 					sym += newTexts.get(ctx.expr(0));
+					
 					sym += newTexts.get(ctx.expr(1));
 					sym += "           ";
 					switch (ctx.getChild(1).getText()) {
@@ -517,7 +515,29 @@ public class UCodeGenListener extends MiniGoBaseListener {
 				if(ctx.type_spec().getText().equals("int")){
 					if(ctx.expr(0).getText().contains(".")){
 						
-						sym += "\n[type Error]";
+						sym += "\n           [type Error]";
+						symbol.remove(ctx.IDENT().get(0).getText(), new Var(0, 2, localVal));
+						localVal--;
+					}else if((int)ctx.expr(0).getText().charAt(0) >=65){
+						sym += "\n           [expr Error]";
+						symbol.remove(ctx.IDENT().get(0).getText(), new Var(0, 2, localVal));
+						localVal--;
+					}
+					else{
+
+						sym += "\n           ldc "+ctx.expr(0).getText()+" \n";
+						sym += "           str " + symbol.get(ctx.IDENT().get(0).getText()).base + " "
+						+ symbol.get(ctx.IDENT().get(0).getText()).offset + "";
+						type.put(ctx.IDENT().get(0).getText(), ctx.type_spec().getText());
+					}
+				}else if(ctx.type_spec().getText().equals("string")){
+					sym += "\n[type Error]";
+					symbol.remove(ctx.IDENT().get(0).getText(), new Var(0, 2, localVal));
+					localVal--;
+				}else if(ctx.type_spec().getText().equals("float")){
+					if(!ctx.expr(0).getText().contains(".")){
+						
+						sym += "\n           [type Error]";
 						symbol.remove(ctx.IDENT().get(0).getText(), new Var(0, 2, localVal));
 						localVal--;
 					}else{
@@ -525,6 +545,7 @@ public class UCodeGenListener extends MiniGoBaseListener {
 						sym += "\n           ldc "+ctx.expr(0).getText()+" \n";
 						sym += "           str " + symbol.get(ctx.IDENT().get(0).getText()).base + " "
 						+ symbol.get(ctx.IDENT().get(0).getText()).offset + "";
+						type.put(ctx.IDENT().get(0).getText(), ctx.type_spec().getText());
 					}
 				}
 			} else if(ctx.getChildCount() == 9){
@@ -547,7 +568,8 @@ public class UCodeGenListener extends MiniGoBaseListener {
 				localVal++;
 				sym += " 1";
 				//String temp2 = ctx.expr(0).getText();
-				
+
+				type.put(ctx.IDENT().get(0).getText(), ctx.type_spec().getText());
 						sym += "\n           ldc "+ctx.expr(0).getText()+" \n";
 						sym += "           str " + symbol.get(ctx.IDENT().get(0).getText()).base + " "
 						+ symbol.get(ctx.IDENT().get(0).getText()).offset + "";
