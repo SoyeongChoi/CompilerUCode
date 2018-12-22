@@ -12,6 +12,7 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 public class UCodeGenListener extends MiniGoBaseListener {
 	ParseTreeProperty<String> newTexts = new ParseTreeProperty<String>();
 	HashMap<String, Var> symbol = new HashMap();
+	HashMap<String,String>type = new HashMap();
 	int localVal = 1;
 	int globalVal = 1;
 	int Loop = 0;
@@ -94,10 +95,16 @@ public class UCodeGenListener extends MiniGoBaseListener {
 	public void exitProgram(MiniGoParser.ProgramContext ctx) {
 		String fun_decl = "", var_decl = "";
 		for (int i = 0; i < ctx.getChildCount(); i++) {
-			if (ctx.getChild(i).getChild(0) instanceof MiniGoParser.Fun_declContext)
+			if (ctx.getChild(i).getChild(0) instanceof MiniGoParser.Fun_declContext){				
 				fun_decl += newTexts.get(ctx.decl(i));
-			else
+			}
+			else{
 				var_decl += newTexts.get(ctx.decl(i));
+				if(type.containsKey(ctx.decl(i).getText())){
+					var_decl += type.get(ctx.decl(i).getText())+"\n";
+				}
+			}
+				
 		}
 		var_decl += "           bgn " + (globalVal - 1) + " \n           ldp \n           call main \n           end ";
 		newTexts.put(ctx, fun_decl + var_decl);
@@ -146,22 +153,29 @@ public class UCodeGenListener extends MiniGoBaseListener {
 			MiniGoParser.ParamsContext params = (MiniGoParser.ParamsContext) ctx.getParent().getChild(3);
 			for (int i = 0; i < params.param().size(); i++) { // paramsCheck
 				sym += "           sym 2 " + localVal + " 1 \n";
-				if (params.param(i).getChildCount() == 4)
+				if (params.param(i).getChildCount() == 4){					
 					symbol.put(params.param(i).IDENT().getText(), new Var(1, 2, localVal));
-				else
+					type.put(params.param(i).IDENT().getText(),params.param(i).type_spec().getText());
+				}
+				else{					
 					symbol.put(params.param(i).IDENT().getText(), new Var(0, 2, localVal));
+					type.put(params.param(i).IDENT().getText(),params.param(i).type_spec().getText());
+				}
 				localVal++;
 			}
 			for (int i = 0; i < ctx.local_decl().size(); i++) {
 				MiniGoParser.Local_declContext local_decl = ctx.local_decl(i);
-				sym += "           sym 2 " + String.valueOf(localVal);
+				sym += "           sym 2 " + localVal;
+				
 				if (local_decl.getChildCount() == 6) {
 					symbol.put(local_decl.IDENT().getText(), new Var(1, 2, localVal));
+					
 					sym += " " + local_decl.LITERAL().getText();
 					localVal += Integer.parseInt(local_decl.LITERAL().getText());
 				} else {
 					symbol.put(local_decl.IDENT().getText(), new Var(0, 2, localVal));
 					sym += " 1";
+					type.put(local_decl.IDENT().getText(),local_decl.type_spec().getText());
 					localVal++;
 				}
 				sym += " \n";
@@ -343,7 +357,7 @@ public class UCodeGenListener extends MiniGoBaseListener {
 				// IDENT '=' expr
 				else if (ctx.getChild(1).getText().equals("=")) {
 					if(!(ctx.getParent() instanceof MiniGoParser.Assign_stmtContext)){
-						sym += newTexts.get(ctx.expr(0));
+						sym += newTexts.get(ctx.expr().get(0));
 						sym += "           str " + symbol.get(ctx.IDENT().getText()).base + " "
 								+ symbol.get(ctx.IDENT().getText()).offset + " \n";	
 					}
@@ -483,7 +497,7 @@ public class UCodeGenListener extends MiniGoBaseListener {
 
 	@Override
 	public void enterAssign_stmt(MiniGoParser.Assign_stmtContext ctx) {
-	
+		
 		String sym = "";
 		/*
 		  VAR IDENT ',' IDENT type_spec '=' LITERAL ',' LITERAL
@@ -491,19 +505,31 @@ public class UCodeGenListener extends MiniGoBaseListener {
          | IDENT type_spec '=' expr
          | IDENT '[' expr ']' '=' expr ;
 		 */
-		if (ctx.getChildCount() >= 4) {
-			localVal++;
-			sym += "           sym 2 " + localVal;
+		if (ctx.getChildCount() > 4) {
+		
 			if (ctx.getChildCount() == 5) {
-				String temp = ctx.IDENT(0).getText();
-				symbol.put(ctx.IDENT(0).getText(), new Var(0, 2, localVal));
+				sym += "           sym 2 " + localVal;
+				String temp = ctx.IDENT(0).getText();                   
+				symbol.put(ctx.IDENT().get(0).getText(), new Var(0, 2, localVal));
 				localVal++;
 				sym += " 1";
 				//String temp2 = ctx.expr(0).getText();
-				sym += newTexts.get(ctx.expr(0));
-				sym += "           str " + symbol.get(ctx.IDENT(0).getText()).base + " "
-				+ symbol.get(ctx.IDENT(0).getText()).offset + " \n";
+				if(ctx.type_spec().getText().equals("int")){
+					if(ctx.expr(0).getText().contains(".")){
+						
+						sym += "\n[type Error]";
+						symbol.remove(ctx.IDENT().get(0).getText(), new Var(0, 2, localVal));
+						localVal--;
+					}else{
+
+						sym += "\n           ldc "+ctx.expr(0).getText()+" \n";
+						sym += "           str " + symbol.get(ctx.IDENT().get(0).getText()).base + " "
+						+ symbol.get(ctx.IDENT().get(0).getText()).offset + "";
+					}
+				}
 			} else if(ctx.getChildCount() == 9){
+				localVal++;
+				sym += "           sym 2 " + localVal;
 				//symbol.put(ctx.IDENT().toString(), new Var(1, 1, globalVal));
 			//	sym += " " + ctx.LITERAL().getText();
 			//	globalVal = Integer.valueOf(ctx.LITERAL().getText());
@@ -514,7 +540,22 @@ public class UCodeGenListener extends MiniGoBaseListener {
 				
 				sym += " " + ctx.LITERAL(1).getText();
 				localVal++;
-			}else{
+			}else if(ctx.getChildCount() == 7){
+				sym += "           sym 2 " + localVal;
+				String temp = ctx.IDENT(0).getText();                   
+				symbol.put(ctx.IDENT().get(0).getText(), new Var(0, 2, localVal));
+				localVal++;
+				sym += " 1";
+				//String temp2 = ctx.expr(0).getText();
+				
+						sym += "\n           ldc "+ctx.expr(0).getText()+" \n";
+						sym += "           str " + symbol.get(ctx.IDENT().get(0).getText()).base + " "
+						+ symbol.get(ctx.IDENT().get(0).getText()).offset + "";
+					}
+			}
+				
+			else{
+				
 				if(ctx.getChildCount() == 6)					
 				{
 					sym += newTexts.get(ctx.getChild(0));
@@ -535,11 +576,12 @@ public class UCodeGenListener extends MiniGoBaseListener {
 					localVal++;
 					}
 				}
-				sym += " \n";
+		sym += " \n";
 
-			}
 		newTexts.put(ctx, sym);
+			
 		}
+
 
 	
 
