@@ -12,7 +12,8 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 public class UCodeGenListener extends MiniGoBaseListener {
 	ParseTreeProperty<String> newTexts = new ParseTreeProperty<String>();
 	HashMap<String, Var> symbol = new HashMap();
-	HashMap<String,String>type = new HashMap();
+	HashMap<Var, String> symbolVar = new HashMap();
+	HashMap<String, String>type = new HashMap();
 	int localVal = 1;
 	int globalVal = 1;
 	int Loop = 0;
@@ -153,6 +154,7 @@ public class UCodeGenListener extends MiniGoBaseListener {
 				if (params.param(i).getChildCount() == 4){					
 					symbol.put(params.param(i).IDENT().getText(), new Var(1, 2, localVal));
 					type.put(params.param(i).IDENT().getText(),params.param(i).type_spec().getText());
+					
 				}
 				else{					
 					symbol.put(params.param(i).IDENT().getText(), new Var(0, 2, localVal));
@@ -487,12 +489,97 @@ public class UCodeGenListener extends MiniGoBaseListener {
 				stmt += newTexts.get(ctx.for_stmt());
 			else if (ctx.return_stmt() != null)// return_stmt
 				stmt += newTexts.get(ctx.return_stmt());
-			
+			else if(ctx.switch_stmt() != null){
+				stmt += newTexts.get(ctx.switch_stmt());
+			}
 		}
 		newTexts.put(ctx, stmt);
 
 	}
 
+	
+	@Override 
+	public void enterSwitch_stmt(MiniGoParser.Switch_stmtContext ctx){
+		
+	}
+	@Override 
+	public void exitSwitch_stmt(MiniGoParser.Switch_stmtContext ctx){
+		
+		
+		 	String sym = "";
+		String s = "";
+		if(type.containsKey(ctx.getChild(1).getText())){
+			System.out.println("??"+symbolVar.get(symbol.get(ctx.getChild(1).getText())));
+		}
+		if(ctx.case_stmt()!=null){
+				
+				if(ctx.case_stmt().getChildCount() == 6){
+					System.out.println("aaa"+ctx.case_stmt().getText());
+					System.out.println("AAA"+newTexts.get(ctx.case_stmt().getChild(1)));//
+					System.out.println("EEE"+ctx.case_stmt().getChild(4).getText());
+				}else if(ctx.case_stmt().getChildCount() == 4){
+					
+				}else if(ctx.case_stmt().getChildCount() == 5){
+					System.out.println("aaa"+ctx.case_stmt().getText());
+					System.out.println("AAA"+newTexts.get(ctx.case_stmt().getChild(2)));//
+
+					System.out.println("EEE"+ctx.case_stmt().getChild(4).getText());
+				}else{
+					System.out.println("aaa"+ctx.case_stmt().getText());
+					System.out.println("AAA"+newTexts.get(ctx.case_stmt().getChild(2)));//
+					System.out.println("EEE"+ctx.case_stmt().getChild(5).getText());					
+				}
+			
+			sym += newTexts.get(ctx.expr());
+			sym += "           " + "fjp $$" + Loop + " \n";
+			sym += newTexts.get(ctx.case_stmt().expr(0));
+			System.out.println("!!!!"+sym);
+			/*if (ctx.ELSE() != null) {
+				sym += "           " + "ujp $$" + (Loop + 1) + " \n";
+				String elseLoop = "$$" + (Loop++);
+				for (int i = 0; i < 11 - elseLoop.length(); i++)
+					s += " ";
+				sym += elseLoop + s + "nop \n";
+				sym += newTexts.get(ctx.compound_stmt(1));
+			}*/
+			String endLoop = "$$" + (Loop++);
+			s = "";
+			for (int i = 0; i < 11 - endLoop.length(); i++)
+				s += " ";
+			sym += endLoop + s + "nop \n";
+		}
+		if (ctx.getChildCount() >= 3) {
+			
+		}
+		newTexts.put(ctx, sym); 
+		 
+		 
+		
+		/*
+		String forS = "";
+		String s = "";
+		
+		if (ctx.getChildCount() == 3) {
+			forS += "$$" + Loop;
+			for (int i = 0; i < 11 - forS.length(); i++)
+				s += " ";
+			forS += s + "nop \n" + newTexts.get(ctx.expr());
+			forS += "           " + "fjp $$" + (Loop + 1) + " \n";
+		//	forS += newTexts.get(ctx.compound_stmt());
+
+			forS += "           " + "ujp $$" + (Loop++) + " \n";
+			String fjpL = "$$" + (Loop++);
+			s = "";
+			for (int i = 0; i < 11 - fjpL.length(); i++)
+				s += " ";
+			forS += fjpL + s + "nop \n";
+		}
+		// System.out.println(stmt);
+		 * 
+		newTexts.put(ctx, forS);
+		 */
+
+	}
 	@Override
 	public void enterAssign_stmt(MiniGoParser.Assign_stmtContext ctx) {
 		
@@ -524,11 +611,11 @@ public class UCodeGenListener extends MiniGoBaseListener {
 						localVal--;
 					}
 					else{
-
 						sym += "\n           ldc "+ctx.expr(0).getText()+" \n";
 						sym += "           str " + symbol.get(ctx.IDENT().get(0).getText()).base + " "
 						+ symbol.get(ctx.IDENT().get(0).getText()).offset + "";
 						type.put(ctx.IDENT().get(0).getText(), ctx.type_spec().getText());
+						symbolVar.put(symbol.get(ctx.IDENT().get(0).getText()), ctx.expr(0).getText());
 					}
 				}else if(ctx.type_spec().getText().equals("string")){
 					sym += "\n[type Error]";
@@ -541,11 +628,11 @@ public class UCodeGenListener extends MiniGoBaseListener {
 						symbol.remove(ctx.IDENT().get(0).getText(), new Var(0, 2, localVal));
 						localVal--;
 					}else{
-
 						sym += "\n           ldc "+ctx.expr(0).getText()+" \n";
 						sym += "           str " + symbol.get(ctx.IDENT().get(0).getText()).base + " "
 						+ symbol.get(ctx.IDENT().get(0).getText()).offset + "";
 						type.put(ctx.IDENT().get(0).getText(), ctx.type_spec().getText());
+						symbolVar.put(symbol.get(ctx.IDENT().get(0).getText()), ctx.expr(0).getText());
 					}
 				}
 			} else if(ctx.getChildCount() == 9){
@@ -556,9 +643,12 @@ public class UCodeGenListener extends MiniGoBaseListener {
 			//	globalVal = Integer.valueOf(ctx.LITERAL().getText());
 				symbol.put(ctx.IDENT(0).getText(), new Var(0, 2, localVal));
 				sym += " " + ctx.LITERAL(0).getText();
+
+				symbolVar.put(symbol.get(ctx.IDENT(0).getText()), ctx.LITERAL(0).getText());
 				localVal++;
 				symbol.put(ctx.IDENT(1).toString(), new Var(0, 2, localVal));
-				
+
+				symbolVar.put(symbol.get(ctx.IDENT(0).getText()), ctx.LITERAL(1).getText());
 				sym += " " + ctx.LITERAL(1).getText();
 				localVal++;
 			}else if(ctx.getChildCount() == 7){
@@ -573,6 +663,8 @@ public class UCodeGenListener extends MiniGoBaseListener {
 						sym += "\n           ldc "+ctx.expr(0).getText()+" \n";
 						sym += "           str " + symbol.get(ctx.IDENT().get(0).getText()).base + " "
 						+ symbol.get(ctx.IDENT().get(0).getText()).offset + "";
+
+						symbolVar.put(symbol.get(ctx.IDENT().get(0).getText()), ctx.expr(0).getText());
 					}
 			}
 				
