@@ -6,6 +6,8 @@ var_decl   : VAR IDENT type_spec
          | VAR IDENT ',' IDENT type_spec
          | VAR IDENT '[' LITERAL ']' type_spec ;
 type_spec  : INT 
+		 | STRING
+		 | FLOAT
          | VOID 
          | ; 
 fun_decl   : FUNC IDENT '(' params ')' type_spec compound_stmt  
@@ -23,6 +25,7 @@ stmt      : expr_stmt
 expr_stmt  : expr ;
 assign_stmt : VAR IDENT ',' IDENT type_spec '=' LITERAL ',' LITERAL
          | VAR IDENT type_spec '=' expr
+         | VAR IDENT type_spec '=' '\"' expr '\"'
          | IDENT type_spec '=' expr
          | IDENT '[' expr ']' '=' expr ;
 compound_stmt: '{' local_decl* stmt* '}';
@@ -54,6 +57,8 @@ VAR          : 'var'   ;
 FUNC      : 'func'  ;
 FMT          : 'fmt'      ;
 INT          : 'int'   ;
+STRING      : 'string'	;
+FLOAT      : 'float'	;
 FOR          : 'for'   ;
 IF       : 'if'    ;
 ELSE      : 'else'  ;
@@ -72,7 +77,7 @@ IDENT     : [a-zA-Z_]
          
 LITERAL       : DecimalConstant | OctalConstant | HexadecimalConstant ;
 
-DecimalConstant    : '0' | [1-9] [0-9]* ;
+DecimalConstant    : '0' | [1-9] [0-9]* |[1-9] [0-9]* '.' [0-9]+ | '0.' [0-9]+;
 OctalConstant  : '0' [0-7]* ;
 HexadecimalConstant    : '0' [xX] [0-9a-fA-F]+ ;
 WS       : (' '
