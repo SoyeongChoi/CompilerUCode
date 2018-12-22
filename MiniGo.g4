@@ -21,17 +21,26 @@ stmt      : expr_stmt
          | assign_stmt
          | if_stmt
          | for_stmt
-         | return_stmt;
+         | return_stmt
+         | switch_stmt;
 expr_stmt  : expr ;
 assign_stmt : VAR IDENT ',' IDENT type_spec '=' LITERAL ',' LITERAL
          | VAR IDENT type_spec '=' expr
          | VAR IDENT type_spec '=' '\"' expr '\"'
          | IDENT type_spec '=' expr
+         | IDENT type_spec '=' '\"' expr '\"'
          | IDENT '[' expr ']' '=' expr ;
 compound_stmt: '{' local_decl* stmt* '}';
 if_stmt       : IF expr compound_stmt
          | IF expr compound_stmt ELSE compound_stmt ;
 for_stmt    : FOR expr compound_stmt;
+switch_stmt   : SWITCH expr '{' switch_stmt '}'
+			| CASE case_stmt switch_stmt
+			| DEFAULT case_stmt ;
+case_stmt    : expr ':' expr '=' expr
+			 | expr ':' expr '=' '\"' expr '\"'
+			 | ':' expr '=' '\"' expr '\"'
+			 | ':' expr '=' expr ;
 return_stmt    : RETURN expr ',' expr
          | RETURN expr
          | RETURN ;
@@ -54,6 +63,8 @@ args      : expr (',' expr) *
          
 VOID      : 'void'     ;
 VAR          : 'var'   ;
+CASE      : 'case'    ;
+SWITCH       : 'switch'    ;
 FUNC      : 'func'  ;
 FMT          : 'fmt'      ;
 INT          : 'int'   ;
@@ -63,6 +74,7 @@ FOR          : 'for'   ;
 IF       : 'if'    ;
 ELSE      : 'else'  ;
 RETURN    : 'return';
+DEFAULT   : 'default';
 OR       : 'or'    ;
 AND          : 'and'   ;
 LE       : '<='    ;
