@@ -1,29 +1,40 @@
-main       proc 2 2 2 
-           sym 2 1 1 
-           sym 2 2 1 
-           ldc 84 
+main       proc 0 2 2 
+           sym 2 1 1
+           ldc 2 
            str 2 1 
-           ldc 0 
+           sym 2 2 1
+           ldc asd 
            str 2 2 
+           sym 2 3 1
+           ldc 84 
+           str 2 3 
+           sym 2 4 1
+           ldc 1 
+           str 2 4 
+           sym 2 5 1
+           ldc 1.0 
+           str 2 5 
+           lod 2 3 
+           inc 
+           str 2 3 
 $$0        nop 
-           lod 2 1 
+           lod 2 3 
            ldc 0 
            gt 
            fjp $$1 
-           lod 2 1 
-           ldc 2 
-           div 
-           str 2 1 
-           lod 2 2 
-           lod 2 1 
+[type mismatch] 
+           str 2 3 
+           lod 2 4 
+           lod 2 3 
            add 
-           str 2 2 
+           str 2 4 
            ujp $$0 
 $$1        nop 
-           lod 2 2 
+           lod 2 4 
            ret 
            end 
-           bgn 0 
+           sym 11 1 
+           bgn 1 
            ldp 
            call main 
            end 

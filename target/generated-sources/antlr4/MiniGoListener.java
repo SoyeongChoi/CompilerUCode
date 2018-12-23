@@ -38,6 +38,16 @@ public interface MiniGoListener extends ParseTreeListener {
 	 */
 	void exitIf_stmt(@NotNull MiniGoParser.If_stmtContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link MiniGoParser#case_stmt}.
+	 * @param ctx the parse tree
+	 */
+	void enterCase_stmt(@NotNull MiniGoParser.Case_stmtContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link MiniGoParser#case_stmt}.
+	 * @param ctx the parse tree
+	 */
+	void exitCase_stmt(@NotNull MiniGoParser.Case_stmtContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link MiniGoParser#program}.
 	 * @param ctx the parse tree
 	 */
@@ -117,6 +127,16 @@ public interface MiniGoListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitParam(@NotNull MiniGoParser.ParamContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link MiniGoParser#switch_stmt}.
+	 * @param ctx the parse tree
+	 */
+	void enterSwitch_stmt(@NotNull MiniGoParser.Switch_stmtContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link MiniGoParser#switch_stmt}.
+	 * @param ctx the parse tree
+	 */
+	void exitSwitch_stmt(@NotNull MiniGoParser.Switch_stmtContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link MiniGoParser#for_stmt}.
 	 * @param ctx the parse tree

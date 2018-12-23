@@ -52,6 +52,18 @@ public class MiniGoBaseListener implements MiniGoListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterCase_stmt(@NotNull MiniGoParser.Case_stmtContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitCase_stmt(@NotNull MiniGoParser.Case_stmtContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterProgram(@NotNull MiniGoParser.ProgramContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -143,6 +155,18 @@ public class MiniGoBaseListener implements MiniGoListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitParam(@NotNull MiniGoParser.ParamContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterSwitch_stmt(@NotNull MiniGoParser.Switch_stmtContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitSwitch_stmt(@NotNull MiniGoParser.Switch_stmtContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
