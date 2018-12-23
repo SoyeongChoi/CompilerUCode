@@ -125,8 +125,6 @@ public class UCodeGenListener extends MiniGoBaseListener {
 			e.printStackTrace();
 		}
 
-		// 처음에는 print문으로 진행하고 다하고나서는 newText같은 Buffer에 추가해주고
-		// 여기서 파일 write해주면 될 것 같음.
 	}
 
 	@Override
@@ -200,7 +198,6 @@ public class UCodeGenListener extends MiniGoBaseListener {
 		if (ctx.getParent() instanceof MiniGoParser.Fun_declContext) {
 			if (ctx.getParent().getChild(0).getText().equals("func")) {
 				com += "           ret \n";
-				// System.out.println(" ret \n");
 			}
 			// System.out.println(" end \n");
 			com += "           end \n";
@@ -803,7 +800,6 @@ public class UCodeGenListener extends MiniGoBaseListener {
 		}
 		newTexts.put(ctx, stmt);
 
-//		System.out.println();
 	}
 
 	public class Var {
