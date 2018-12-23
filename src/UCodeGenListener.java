@@ -2,7 +2,9 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 
 import org.antlr.v4.runtime.misc.NotNull;
 import org.antlr.v4.runtime.tree.ParseTree;
@@ -13,7 +15,7 @@ public class UCodeGenListener extends MiniGoBaseListener {
 	ParseTreeProperty<String> newTexts = new ParseTreeProperty<String>();
 	HashMap<String, Var> symbol = new HashMap();
 	HashMap<Var, String> symbolVar = new HashMap();
-	HashMap<String, String>type = new HashMap();
+	HashMap<String, String> type = new HashMap();
 	int localVal = 1;
 	int globalVal = 1;
 	int Loop = 0;
@@ -96,28 +98,27 @@ public class UCodeGenListener extends MiniGoBaseListener {
 	public void exitProgram(MiniGoParser.ProgramContext ctx) {
 		String fun_decl = "", var_decl = "";
 		for (int i = 0; i < ctx.getChildCount(); i++) {
-			if (ctx.getChild(i).getChild(0) instanceof MiniGoParser.Fun_declContext){				
+			if (ctx.getChild(i).getChild(0) instanceof MiniGoParser.Fun_declContext) {
 				fun_decl += newTexts.get(ctx.decl(i));
-			}
-			else{
+			} else {
 				var_decl += newTexts.get(ctx.decl(i));
 			}
-				
+
 		}
 		var_decl += "           bgn " + (globalVal - 1) + " \n           ldp \n           call main \n           end ";
 		newTexts.put(ctx, fun_decl + var_decl);
 		System.out.println();
 		System.out.println(newTexts.get(ctx));
-
+		
 		try {
 			File newFile = new File("item2Result.txt");
 			FileWriter fw = new FileWriter(newFile, true);
 			BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(newFile));
-			
-				if (newFile.canWrite()) {
-					bufferedWriter.write(newTexts.get(ctx));
-				}
-			
+
+			if (newFile.canWrite()) {
+				bufferedWriter.write(newTexts.get(ctx));
+			}
+
 			bufferedWriter.close();
 			fw.close();
 		} catch (Exception e) {
@@ -151,30 +152,29 @@ public class UCodeGenListener extends MiniGoBaseListener {
 			MiniGoParser.ParamsContext params = (MiniGoParser.ParamsContext) ctx.getParent().getChild(3);
 			for (int i = 0; i < params.param().size(); i++) { // paramsCheck
 				sym += "           sym 2 " + localVal + " 1 \n";
-				if (params.param(i).getChildCount() == 4){					
+				if (params.param(i).getChildCount() == 4) {
 					symbol.put(params.param(i).IDENT().getText(), new Var(1, 2, localVal));
-					type.put(params.param(i).IDENT().getText(),params.param(i).type_spec().getText());
-					
-				}
-				else{					
+					type.put(params.param(i).IDENT().getText(), params.param(i).type_spec().getText());
+
+				} else {
 					symbol.put(params.param(i).IDENT().getText(), new Var(0, 2, localVal));
-					type.put(params.param(i).IDENT().getText(),params.param(i).type_spec().getText());
+					type.put(params.param(i).IDENT().getText(), params.param(i).type_spec().getText());
 				}
 				localVal++;
 			}
 			for (int i = 0; i < ctx.local_decl().size(); i++) {
 				MiniGoParser.Local_declContext local_decl = ctx.local_decl(i);
 				sym += "           sym 2 " + localVal;
-				
+
 				if (local_decl.getChildCount() == 6) {
 					symbol.put(local_decl.IDENT().getText(), new Var(1, 2, localVal));
-					
+
 					sym += " " + local_decl.LITERAL().getText();
 					localVal += Integer.parseInt(local_decl.LITERAL().getText());
 				} else {
 					symbol.put(local_decl.IDENT().getText(), new Var(0, 2, localVal));
 					sym += " 1";
-					type.put(local_decl.IDENT().getText(),local_decl.type_spec().getText());
+					type.put(local_decl.IDENT().getText(), local_decl.type_spec().getText());
 					localVal++;
 				}
 				sym += " \n";
@@ -193,8 +193,8 @@ public class UCodeGenListener extends MiniGoBaseListener {
 	@Override
 	public void exitCompound_stmt(MiniGoParser.Compound_stmtContext ctx) {
 		String com = "";
-		
-		for (int i = 0; i < ctx.stmt().size(); i++){
+
+		for (int i = 0; i < ctx.stmt().size(); i++) {
 			com += newTexts.get(ctx.stmt(i));
 		}
 		if (ctx.getParent() instanceof MiniGoParser.Fun_declContext) {
@@ -325,29 +325,38 @@ public class UCodeGenListener extends MiniGoBaseListener {
 
 						}
 					}
-				} else{
-					if(ctx.LITERAL(0)!=null){						
+				} else {
+					if (ctx.LITERAL(0) != null) {
 						sym += "           ldc " + newTexts.get(ctx.LITERAL(0)) + " \n";
 					}
 				}
 			}
 			// op=('-'|'+'|'--'|'++'|'!') expr
 			else if (ctx.getChildCount() == 2) {
-				sym += newTexts.get(ctx.expr(0));
-				if(ctx.getChild(0).getText().equals("-")){					
-					sym += "           neg \n";
-				}else if(ctx.getChild(0).getText().equals("--")){
-					sym += "           dec \n";
-				}else if(ctx.getChild(0).getText().equals("++")){
-					sym += "           inc \n";
-				}else if(ctx.getChild(0).getText().equals("!")){
-					sym += "           notop \n";
+				if (newTexts.get(ctx.expr(0)) != null) {
+					if (!type.get(ctx.expr(0).getText()).equals("string")) {
+						sym += newTexts.get(ctx.expr(0));
+					}
 				}
-				
-				if (ctx.IDENT() != null) {
-					sym += "           str " + symbol.get(ctx.IDENT().getText()).base + " "
-							+ symbol.get(ctx.IDENT().getText()).offset + " \n";
+				if (!type.get(ctx.getChild(1).getText()).equals("string")) {
+					if (ctx.getChild(0).getText().equals("-")) {
+						sym += "           neg \n";
+					} else if (ctx.getChild(0).getText().equals("--")) {
+						sym += "           dec \n";
+					} else if (ctx.getChild(0).getText().equals("++")) {
+						sym += "           inc \n";
+					} else if (ctx.getChild(0).getText().equals("!")) {
+						sym += "           notop \n";
+					}
+				} else {
+					sym += "           [String does not calculate] \n";
 				}
+					
+				if (ctx.expr(0).getText() != null) {
+					sym += "           str " + symbol.get(ctx.expr(0).getText()).base + " "
+							+ symbol.get(ctx.expr(0).getText()).offset + " \n";
+				}
+
 			} else if (ctx.getChildCount() == 3) {
 				// '(' expr ')'
 				if (ctx.getChild(0).getText().equals("(")) {
@@ -355,61 +364,166 @@ public class UCodeGenListener extends MiniGoBaseListener {
 				}
 				// IDENT '=' expr
 				else if (ctx.getChild(1).getText().equals("=")) {
-					if(!(ctx.getParent() instanceof MiniGoParser.Assign_stmtContext)){
+					if (!(ctx.getParent() instanceof MiniGoParser.Assign_stmtContext)) {
 						sym += newTexts.get(ctx.expr().get(0));
 						sym += "           str " + symbol.get(ctx.IDENT().getText()).base + " "
-								+ symbol.get(ctx.IDENT().getText()).offset + " \n";	
+								+ symbol.get(ctx.IDENT().getText()).offset + " \n";
 					}
 				}
 				// left=expr op=('*'|'/'|'%') right=expr
 				// left=expr op=('+'|'-') right=expr
 				// left=expr op=(EQ|NE|LE|'<'|GE|'>'|AND|OR) right=expr
 				else {
-					sym += newTexts.get(ctx.expr(0));
-					
-					sym += newTexts.get(ctx.expr(1));
-					sym += "           ";
-					switch (ctx.getChild(1).getText()) {
-					case "*":
-						sym += "mult \n";
-						break;
-					case "/":
-						sym += "div \n";
-						break;
-					case "%":
-						sym += "mod \n";
-						break;
-					case "+":
-						sym += "add \n";
-						break;
-					case "-":
-						sym += "sub \n";
-						break;
-					case "==":
-						sym += "eq \n";
-						break;
-					case "!=":
-						sym += "ne \n";
-						break;
-					case "<=":
-						sym += "le \n";
-						break;
-					case "<":
-						sym += "lt \n";
-						break;
-					case ">=":
-						sym += "ge \n";
-						break;
-					case ">":
-						sym += "gt \n";
-						break;
-					case "and":
-						sym += "and \n";
-						break;
-					case "or":
-						sym += "or \n";
-						break;
+
+					// System.out.println(type.get(ctx.expr(0).getText()));
+
+					if (type.get(ctx.expr(1).getText()) != null) {
+						if (type.get(ctx.expr(0).getText()) != null) {
+							if (type.get(ctx.expr(0).getText()).equals(type.get(ctx.expr(1).getText()))) {
+								sym += newTexts.get(ctx.expr(0));
+								sym += newTexts.get(ctx.expr(1));
+
+								sym += "           ";
+								switch (ctx.getChild(1).getText()) {
+								case "*":
+									sym += "mult \n";
+									break;
+								case "/":
+									sym += "div \n";
+									break;
+								case "%":
+									sym += "mod \n";
+									break;
+								case "+":
+									sym += "add \n";
+									break;
+								case "-":
+									sym += "sub \n";
+									break;
+								case "==":
+									sym += "eq \n";
+									break;
+								case "!=":
+									sym += "ne \n";
+									break;
+								case "<=":
+									sym += "le \n";
+									break;
+								case "<":
+									sym += "lt \n";
+									break;
+								case ">=":
+									sym += "ge \n";
+									break;
+								case ">":
+									sym += "gt \n";
+									break;
+								case "and":
+									sym += "and \n";
+									break;
+								case "or":
+									sym += "or \n";
+									break;
+								}
+							} else {
+								sym += "[type mismatch] \n";
+							}
+						} else {
+							sym += newTexts.get(ctx.expr(0));
+							sym += newTexts.get(ctx.expr(1));
+							sym += "           ";
+							switch (ctx.getChild(1).getText()) {
+							case "*":
+								sym += "mult \n";
+								break;
+							case "/":
+								sym += "div \n";
+								break;
+							case "%":
+								sym += "mod \n";
+								break;
+							case "+":
+								sym += "add \n";
+								break;
+							case "-":
+								sym += "sub \n";
+								break;
+							case "==":
+								sym += "eq \n";
+								break;
+							case "!=":
+								sym += "ne \n";
+								break;
+							case "<=":
+								sym += "le \n";
+								break;
+							case "<":
+								sym += "lt \n";
+								break;
+							case ">=":
+								sym += "ge \n";
+								break;
+							case ">":
+								sym += "gt \n";
+								break;
+							case "and":
+								sym += "and \n";
+								break;
+							case "or":
+								sym += "or \n";
+								break;
+							}
+						}
+
+					} else {
+
+						sym += newTexts.get(ctx.expr(0));
+
+						sym += newTexts.get(ctx.expr(1));
+						sym += "           ";
+						switch (ctx.getChild(1).getText()) {
+						case "*":
+							sym += "mult \n";
+							break;
+						case "/":
+							sym += "div \n";
+							break;
+						case "%":
+							sym += "mod \n";
+							break;
+						case "+":
+							sym += "add \n";
+							break;
+						case "-":
+							sym += "sub \n";
+							break;
+						case "==":
+							sym += "eq \n";
+							break;
+						case "!=":
+							sym += "ne \n";
+							break;
+						case "<=":
+							sym += "le \n";
+							break;
+						case "<":
+							sym += "lt \n";
+							break;
+						case ">=":
+							sym += "ge \n";
+							break;
+						case ">":
+							sym += "gt \n";
+							break;
+						case "and":
+							sym += "and \n";
+							break;
+						case "or":
+							sym += "or \n";
+							break;
+						}
 					}
+
 				}
 			}
 			// IDENT '(' args ')' | IDENT '[' expr ']'
@@ -427,7 +541,7 @@ public class UCodeGenListener extends MiniGoBaseListener {
 				}
 			}
 			// IDENT '[' expr ']' '=' expr
-			else if(ctx.getChildCount() == 6) {
+			else if (ctx.getChildCount() == 6) {
 				sym += newTexts.get(ctx.getChild(0));
 				sym += "           lda " + symbol.get(ctx.IDENT().getText()).base + " "
 						+ symbol.get(ctx.IDENT().getText()).offset + " \n";
@@ -450,12 +564,14 @@ public class UCodeGenListener extends MiniGoBaseListener {
 				symbol.put(ctx.IDENT().toString(), new Var(1, 1, globalVal));
 				sym += " " + ctx.LITERAL().getText();
 				globalVal = Integer.valueOf(ctx.LITERAL().getText());
+
 			} else {
 				symbol.put(ctx.IDENT().toString(), new Var(0, 1, globalVal));
 				sym += " 1";
 				if (ctx.getChildCount() == 5) {
 					globalVal++;
 					symbol.put(ctx.IDENT().toString(), new Var(0, 1, globalVal));
+					type.put(ctx.IDENT().toString(), ctx.type_spec().getText());
 				}
 				globalVal++;
 			}
@@ -489,7 +605,7 @@ public class UCodeGenListener extends MiniGoBaseListener {
 				stmt += newTexts.get(ctx.for_stmt());
 			else if (ctx.return_stmt() != null)// return_stmt
 				stmt += newTexts.get(ctx.return_stmt());
-			else if(ctx.switch_stmt() != null){
+			else if (ctx.switch_stmt() != null) {
 				stmt += newTexts.get(ctx.switch_stmt());
 			}
 		}
@@ -497,150 +613,109 @@ public class UCodeGenListener extends MiniGoBaseListener {
 
 	}
 
-	
-	@Override 
-	public void enterSwitch_stmt(MiniGoParser.Switch_stmtContext ctx){
-		
+	@Override
+	public void enterSwitch_stmt(MiniGoParser.Switch_stmtContext ctx) {
+
 	}
-	@Override 
-	public void exitSwitch_stmt(MiniGoParser.Switch_stmtContext ctx){
-		
-		
-		 	String sym = "";
-		String s = "";
-		if(type.containsKey(ctx.getChild(1).getText())){
-			System.out.println("??"+symbolVar.get(symbol.get(ctx.getChild(1).getText())));
-		}
-		if(ctx.case_stmt()!=null){
-				
-				if(ctx.case_stmt().getChildCount() == 6){
-					System.out.println("aaa"+ctx.case_stmt().getText());
-					System.out.println("AAA"+newTexts.get(ctx.case_stmt().getChild(1)));//
-					System.out.println("EEE"+ctx.case_stmt().getChild(4).getText());
-				}else if(ctx.case_stmt().getChildCount() == 4){
-					
-				}else if(ctx.case_stmt().getChildCount() == 5){
-					System.out.println("aaa"+ctx.case_stmt().getText());
-					System.out.println("AAA"+newTexts.get(ctx.case_stmt().getChild(2)));//
 
-					System.out.println("EEE"+ctx.case_stmt().getChild(4).getText());
-				}else{
-					System.out.println("aaa"+ctx.case_stmt().getText());
-					System.out.println("AAA"+newTexts.get(ctx.case_stmt().getChild(2)));//
-					System.out.println("EEE"+ctx.case_stmt().getChild(5).getText());					
-				}
-			
-			sym += newTexts.get(ctx.expr());
-			sym += "           " + "fjp $$" + Loop + " \n";
-			sym += newTexts.get(ctx.case_stmt().expr(0));
-			System.out.println("!!!!"+sym);
-			/*if (ctx.ELSE() != null) {
-				sym += "           " + "ujp $$" + (Loop + 1) + " \n";
-				String elseLoop = "$$" + (Loop++);
-				for (int i = 0; i < 11 - elseLoop.length(); i++)
-					s += " ";
-				sym += elseLoop + s + "nop \n";
-				sym += newTexts.get(ctx.compound_stmt(1));
-			}*/
-			String endLoop = "$$" + (Loop++);
-			s = "";
-			for (int i = 0; i < 11 - endLoop.length(); i++)
-				s += " ";
-			sym += endLoop + s + "nop \n";
-		}
-		if (ctx.getChildCount() >= 3) {
-			
-		}
-		newTexts.put(ctx, sym); 
-		 
-		 
-		
+	@Override
+	public void exitSwitch_stmt(MiniGoParser.Switch_stmtContext ctx) {
+
 		/*
-		String forS = "";
-		String s = "";
-		
-		if (ctx.getChildCount() == 3) {
-			forS += "$$" + Loop;
-			for (int i = 0; i < 11 - forS.length(); i++)
-				s += " ";
-			forS += s + "nop \n" + newTexts.get(ctx.expr());
-			forS += "           " + "fjp $$" + (Loop + 1) + " \n";
-		//	forS += newTexts.get(ctx.compound_stmt());
-
-			forS += "           " + "ujp $$" + (Loop++) + " \n";
-			String fjpL = "$$" + (Loop++);
-			s = "";
-			for (int i = 0; i < 11 - fjpL.length(); i++)
-				s += " ";
-			forS += fjpL + s + "nop \n";
-		}
-		// System.out.println(stmt);
+		 * String sym = ""; String s = "";
+		 * if(type.containsKey(ctx.getChild(1).getText())){
+		 * System.out.println("??"+symbolVar.get(symbol.get(ctx.getChild(1).
+		 * getText()))); } if(ctx.case_stmt()!=null){
 		 * 
-		newTexts.put(ctx, forS);
+		 * if(ctx.case_stmt().getChildCount() == 3){ // case¹® //
+		 * System.out.println("aaa"+ctx.case_stmt().stmt().expr_stmt().getText()
+		 * );
+		 * System.out.println("AAA"+newTexts.get(ctx.case_stmt().getChild(1)));/
+		 * / System.out.println("EEE"+ctx.case_stmt().getChild(4).getText());
+		 * }else if(ctx.case_stmt().getChildCount() == 2){//default¹®
+		 * System.out.println("aaa"+ctx.case_stmt().getText());
+		 * System.out.println("AAA"+newTexts.get(ctx.case_stmt().getChild(2)));/
+		 * /
+		 * 
+		 * System.out.println("EEE"+ctx.case_stmt().getChild(4).getText()); }
+		 * sym += newTexts.get(ctx.expr()); sym += "           " + "fjp $$" +
+		 * Loop + " \n"; // sym += newTexts.get(ctx.case_stmt().expr(0));
+		 * System.out.println("!!!!"+sym); 
+		 */
+		/*
+		 * String endLoop = "$$" + (Loop++); s = ""; for (int i = 0; i < 11 -
+		 * endLoop.length(); i++) s += " "; sym += endLoop + s + "nop \n"; } if
+		 * (ctx.getChildCount() >= 3) {
+		 * 
+		 * } newTexts.put(ctx, sym);
 		 */
 
+
 	}
+
 	@Override
 	public void enterAssign_stmt(MiniGoParser.Assign_stmtContext ctx) {
-		
+
 		String sym = "";
 		/*
-		  VAR IDENT ',' IDENT type_spec '=' LITERAL ',' LITERAL
-         | VAR IDENT type_spec '=' expr
-         | IDENT type_spec '=' expr
-         | IDENT '[' expr ']' '=' expr ;
+		 * VAR IDENT ',' IDENT type_spec '=' LITERAL ',' LITERAL | VAR IDENT
+		 * type_spec '=' expr | IDENT type_spec '=' expr | IDENT '[' expr ']'
+		 * '=' expr ;
 		 */
 		if (ctx.getChildCount() > 4) {
-		
+
 			if (ctx.getChildCount() == 5) {
 				sym += "           sym 2 " + localVal;
-				String temp = ctx.IDENT(0).getText();                   
+				String temp = ctx.IDENT(0).getText();
 				symbol.put(ctx.IDENT().get(0).getText(), new Var(0, 2, localVal));
 				localVal++;
 				sym += " 1";
-				//String temp2 = ctx.expr(0).getText();
-				if(ctx.type_spec().getText().equals("int")){
-					if(ctx.expr(0).getText().contains(".")){
-						
+				// String temp2 = ctx.expr(0).getText();
+				if (ctx.type_spec().getText().equals("int")) {
+					if (ctx.expr(0).getText().contains(".")) {
+
 						sym += "\n           [type Error]";
 						symbol.remove(ctx.IDENT().get(0).getText(), new Var(0, 2, localVal));
 						localVal--;
-					}else if((int)ctx.expr(0).getText().charAt(0) >=65){
+					} else if ((int) ctx.expr(0).getText().charAt(0) >= 65) {
 						sym += "\n           [expr Error]";
 						symbol.remove(ctx.IDENT().get(0).getText(), new Var(0, 2, localVal));
 						localVal--;
-					}
-					else{
-						sym += "\n           ldc "+ctx.expr(0).getText()+" \n";
+					} else {
+						sym += "\n           ldc " + ctx.expr(0).getText() + " \n";
 						sym += "           str " + symbol.get(ctx.IDENT().get(0).getText()).base + " "
-						+ symbol.get(ctx.IDENT().get(0).getText()).offset + "";
+								+ symbol.get(ctx.IDENT().get(0).getText()).offset + "";
 						type.put(ctx.IDENT().get(0).getText(), ctx.type_spec().getText());
 						symbolVar.put(symbol.get(ctx.IDENT().get(0).getText()), ctx.expr(0).getText());
 					}
-				}else if(ctx.type_spec().getText().equals("string")){
+				} else if (ctx.type_spec().getText().equals("string")) {
 					sym += "\n[type Error]";
 					symbol.remove(ctx.IDENT().get(0).getText(), new Var(0, 2, localVal));
 					localVal--;
-				}else if(ctx.type_spec().getText().equals("float")){
-					if(!ctx.expr(0).getText().contains(".")){
-						
+				} else if (ctx.type_spec().getText().equals("float")) {
+					if (!ctx.expr(0).getText().contains(".")) {
+
 						sym += "\n           [type Error]";
 						symbol.remove(ctx.IDENT().get(0).getText(), new Var(0, 2, localVal));
 						localVal--;
-					}else{
-						sym += "\n           ldc "+ctx.expr(0).getText()+" \n";
+					} else if ((int) ctx.expr(0).getText().charAt(0) >= 65) {
+						sym += "\n           [expr Error]";
+						symbol.remove(ctx.IDENT().get(0).getText(), new Var(0, 2, localVal));
+						localVal--;
+					} else {
+						sym += "\n           ldc " + ctx.expr(0).getText() + " \n";
 						sym += "           str " + symbol.get(ctx.IDENT().get(0).getText()).base + " "
-						+ symbol.get(ctx.IDENT().get(0).getText()).offset + "";
+								+ symbol.get(ctx.IDENT().get(0).getText()).offset + "";
 						type.put(ctx.IDENT().get(0).getText(), ctx.type_spec().getText());
 						symbolVar.put(symbol.get(ctx.IDENT().get(0).getText()), ctx.expr(0).getText());
 					}
 				}
-			} else if(ctx.getChildCount() == 9){
+			} else if (ctx.getChildCount() == 9) {
 				localVal++;
 				sym += "           sym 2 " + localVal;
-				//symbol.put(ctx.IDENT().toString(), new Var(1, 1, globalVal));
-			//	sym += " " + ctx.LITERAL().getText();
-			//	globalVal = Integer.valueOf(ctx.LITERAL().getText());
+				// symbol.put(ctx.IDENT().toString(), new Var(1, 1, globalVal));
+				// sym += " " + ctx.LITERAL().getText();
+				// globalVal = Integer.valueOf(ctx.LITERAL().getText());
 				symbol.put(ctx.IDENT(0).getText(), new Var(0, 2, localVal));
 				sym += " " + ctx.LITERAL(0).getText();
 
@@ -651,53 +726,53 @@ public class UCodeGenListener extends MiniGoBaseListener {
 				symbolVar.put(symbol.get(ctx.IDENT(0).getText()), ctx.LITERAL(1).getText());
 				sym += " " + ctx.LITERAL(1).getText();
 				localVal++;
-			}else if(ctx.getChildCount() == 7){
+			} else if (ctx.getChildCount() == 7) {
 				sym += "           sym 2 " + localVal;
-				String temp = ctx.IDENT(0).getText();                   
+				String temp = ctx.IDENT(0).getText();
 				symbol.put(ctx.IDENT().get(0).getText(), new Var(0, 2, localVal));
 				localVal++;
 				sym += " 1";
-				//String temp2 = ctx.expr(0).getText();
+				// String temp2 = ctx.expr(0).getText();
 
 				type.put(ctx.IDENT().get(0).getText(), ctx.type_spec().getText());
-						sym += "\n           ldc "+ctx.expr(0).getText()+" \n";
-						sym += "           str " + symbol.get(ctx.IDENT().get(0).getText()).base + " "
+				sym += "\n           ldc " + ctx.expr(0).getText() + " \n";
+				sym += "           str " + symbol.get(ctx.IDENT().get(0).getText()).base + " "
 						+ symbol.get(ctx.IDENT().get(0).getText()).offset + "";
 
-						symbolVar.put(symbol.get(ctx.IDENT().get(0).getText()), ctx.expr(0).getText());
-					}
+				symbolVar.put(symbol.get(ctx.IDENT().get(0).getText()), ctx.expr(0).getText());
 			}
-				
-			else{
-				
-				if(ctx.getChildCount() == 6)					
-				{
-					sym += newTexts.get(ctx.getChild(0));
-					sym += "           lda " + symbol.get(ctx.IDENT(0).getText()).base + " "
-							+ symbol.get(ctx.IDENT(0).getText()).offset + " \n";
-					sym += "           add \n";
-					sym += newTexts.get(ctx.getChild(1));
-					sym += "           sti \n";
-					localVal += Integer.valueOf(ctx.expr(0).getText());
-				}else {
-					sym += newTexts.get(ctx.getChild(0));
-					sym += "           lda " + symbol.get(ctx.IDENT(0).getText()).base + " "
-							+ symbol.get(ctx.IDENT(0).getText()).offset + " \n";
-				//	sym += newTexts.get(ctx.expr(0));
-			//		sym += "           str " + symbol.get(ctx.IDENT(0).getText()).base + " "
-			//				+ symbol.get(ctx.IDENT().getText()).offset + " \n";
-			
-					localVal++;
-					}
-				}
-		sym += " \n";
 
-		newTexts.put(ctx, sym);
-			
+			sym += " \n";
 		}
 
+		else {
 
-	
+			if (ctx.getChildCount() == 6) {
+				sym += newTexts.get(ctx.getChild(0));
+				sym += "           lda " + symbol.get(ctx.IDENT(0).getText()).base + " "
+						+ symbol.get(ctx.IDENT(0).getText()).offset + " \n";
+				sym += "           add \n";
+				sym += newTexts.get(ctx.getChild(1));
+				sym += "           sti \n";
+				localVal += Integer.valueOf(ctx.expr(0).getText());
+				sym += " \n";
+			} else if(ctx.getChildCount() == 4){
+				sym += newTexts.get(ctx.getChild(0));
+				sym += "           lda " + symbol.get(ctx.IDENT(0).getText()).base + " "
+						+ symbol.get(ctx.IDENT(0).getText()).offset + " \n";
+				// sym += newTexts.get(ctx.expr(0));
+				// sym += " str " + symbol.get(ctx.IDENT(0).getText()).base + "
+				// "
+				// + symbol.get(ctx.IDENT().getText()).offset + " \n";
+
+				sym += " \n";
+				localVal++;
+			}
+		}
+
+		newTexts.put(ctx, sym);
+
+	}
 
 	@Override
 	public void exitAssign_stmt(MiniGoParser.Assign_stmtContext ctx) {
@@ -728,7 +803,7 @@ public class UCodeGenListener extends MiniGoBaseListener {
 		}
 		newTexts.put(ctx, stmt);
 
-		System.out.println();
+//		System.out.println();
 	}
 
 	public class Var {

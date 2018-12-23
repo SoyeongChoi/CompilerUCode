@@ -1,24 +1,18 @@
 var x int
 func main() {
-<<<<<<< HEAD
-	var x int = 0
-	var z int = 0
-	x = 084
+	var a int = 2
+	var t string = "asd"
+	var x int = 84
+	var z int = 1
+	var k float = 1.0
+	
+	++x
 	
 	for x > 0 {
-		x = x / 2
-		z = x + z
-=======
-	var x int
-	var z int
-	x = 84
-	z = 0
-	for x > 0 {
-		x = x / 2
+		x = k / x
 		z = z + x
->>>>>>> SoyeongChoi
 	}
-	
 	write(z)
+	
 	
 }

@@ -36,11 +36,10 @@ if_stmt       : IF expr compound_stmt
 for_stmt    : FOR expr compound_stmt;
 switch_stmt   : SWITCH expr '{' switch_stmt '}'
 			| CASE case_stmt switch_stmt
+			| CASE case_stmt
 			| DEFAULT case_stmt ;
-case_stmt    : expr ':' expr '=' expr
-			 | expr ':' expr '=' '\"' expr '\"'
-			 | ':' expr '=' '\"' expr '\"'
-			 | ':' expr '=' expr ;
+case_stmt    : expr ':' stmt*
+			 | ':' stmt* ;
 return_stmt    : RETURN expr ',' expr
          | RETURN expr
          | RETURN ;
